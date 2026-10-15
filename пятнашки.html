@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Пятнашки на двоих 💘</title>
+<style>
+  :root{
+    --bg1:#2b1b3d; --bg2:#1a1025;
+    --pink:#ff5e8a; --rose:#ff8fab; --violet:#a06cf9;
+    --card-br:#4a2f6b; --card-top:#6d48a8;
+    --text:#fdf1f5; --muted:#cbb4d8;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{
+    font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+    background:linear-gradient(135deg,var(--bg1),var(--bg2));
+    color:var(--text); min-height:100vh; display:flex;
+    flex-direction:column; align-items:center; justify-content:center;
+    padding:18px; user-select:none;
+  }
+  .hidden{display:none!important}
+  h1{font-size:clamp(26px,5vw,44px); letter-spacing:.5px;
+     background:linear-gradient(90deg,var(--rose),var(--violet));
+     -webkit-background-clip:text; background-clip:text; color:transparent;
+     text-align:center}
+  .sub{color:var(--muted); margin:12px 0 26px; text-align:center; max-width:560px; line-height:1.5; font-size:15px}
+
+  /* ---------- стартовый экран ---------- */
+  .panel{
+    background:rgba(255,255,255,.06); backdrop-filter:blur(6px);
+    border:1px solid rgba(255,255,255,.12); border-radius:22px;
+    padding:28px; width:min(94vw,520px);
+    box-shadow:0 20px 60px rgba(0,0,0,.45);
+  }
+  .rowlabel{font-size:13px; color:var(--muted); margin:14px 0 6px; text-transform:uppercase; letter-spacing:1px}
+  .names{display:flex; gap:12px}
+  input[type=text]{
+    flex:1; min-width:0; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.15);
+    border-radius:12px; padding:12px 14px; color:var(--text); font-size:16px; outline:none;
+  }
+  input[type=text]:focus{border-color:var(--rose); box-shadow:0 0 0 3px rgba(255,143,171,.25)}
+  .choices{display:flex; gap:10px; flex-wrap:wrap}
+  .choice{
+    flex:1; min-width:92px; text-align:center; padding:11px 8px; border-radius:12px; cursor:pointer;
+    background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.14); font-size:15px; transition:.15s;
+  }
+  .choice:hover{background:rgba(255,255,255,.13)}
+  .choice.sel{background:linear-gradient(135deg,var(--pink),var(--violet)); border-color:transparent; font-weight:600;
+             box-shadow:0 6px 18px rgba(255,94,138,.35)}
+  .btn{
+    display:block; width:100%; margin-top:24px; padding:15px; border:none; border-radius:14px;
+    font-size:18px; font-weight:700; color:#fff; cursor:pointer; letter-spacing:.4px;
+    background:linear-gradient(135deg,var(--pink),var(--violet));
+    box-shadow:0 10px 24px rgba(255,94,138,.4); transition:.15s;
+  }
+  .btn:hover{transform:translateY(-2px); box-shadow:0 14px 30px rgba(255,94,138,.5)}
+  .btn:active{transform:translateY(0)}
+
+  /* ---------- игровой экран ---------- */
+  .topline{width:min(94vw,640px); display:flex; align-items:center; justify-content:space-between; margin-bottom:10px}
+  .topline .t{font-size:20px; font-weight:700}
+  .iconbtn{background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.15); color:var(--text);
+    border-radius:10px; padding:7px 12px; font-size:16px; cursor:pointer; margin-left:8px}
+  .iconbtn:hover{background:rgba(255,255,255,.15)}
+  .scoreboard{width:min(94vw,640px); display:flex; gap:12px; margin-bottom:10px}
+  .player{
+    flex:1; display:flex; align-items:center; gap:10px; padding:12px 16px; border-radius:16px;
+    background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); transition:.25s;
+  }
+  .player .avatar{font-size:26px}
+  .player .nm{font-weight:600; font-size:16px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .player .sc{margin-left:auto; font-size:24px; font-weight:800;
+    background:linear-gradient(135deg,var(--rose),var(--violet));
+    -webkit-background-clip:text; background-clip:text; color:transparent}
+  .player.active{background:rgba(255,94,138,.14); border-color:var(--pink);
+    box-shadow:0 0 0 3px rgba(255,94,138,.22),0 8px 22px rgba(255,94,138,.18); transform:scale(1.02)}
+  .turnmsg{width:min(94vw,640px); text-align:center; color:var(--muted); font-size:15px; margin-bottom:12px; min-height:22px}
+  .turnmsg b{color:var(--text)}
+
+  .board{display:grid; gap:10px; width:min(94vw,640px)}
+  .card{aspect-ratio:1/1; perspective:700px; cursor:pointer}
+  .card-inner{position:relative; width:100%; height:100%; transform-style:preserve-3d;
+    transition:transform .45s cubic-bezier(.34,1.4,.5,1)}
+  .card.flip .card-inner{transform:rotateY(180deg)}
+  .face{position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    border-radius:14px; backface-visibility:hidden; -webkit-backface-visibility:hidden}
+  .face.back{ /* рубашка */
+    background:
+      radial-gradient(circle at 30% 30%, rgba(255,255,255,.14) 0 12%, transparent 13%),
+      linear-gradient(135deg,var(--card-top),var(--card-br));
+    border:1px solid rgba(255,255,255,.2);
+    font-size:clamp(20px,5.5vw,34px); color:rgba(255,255,255,.55);
+    transition:.15s;
+  }
+  .card:not(.flip):not(.matched):hover .face.back{filter:brightness(1.18)}
+  .face.front{ /* картинка */
+    background:linear-gradient(160deg,#fff8fb,#ffe4ee); transform:rotateY(180deg);
+    border:1px solid rgba(255,255,255,.6); font-size:clamp(26px,6.5vw,44px);
+  }
+  .card.matched{cursor:default; animation:pop .45s ease}
+  .card.matched .face.front{
+    box-shadow:0 0 0 3px var(--pink),0 0 22px rgba(255,94,138,.75);
+    background:linear-gradient(160deg,#fff,#ffe9f1);
+  }
+  @keyframes pop{0%{transform:scale(1)}45%{transform:scale(1.13)}100%{transform:scale(1)}}
+  .card.shake{animation:shake .4s}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
+  .card.done{opacity:.9}
+
+  .gameline{width:min(94vw,640px); display:flex; justify-content:space-between; color:var(--muted);
+    font-size:14px; margin-top:12px; gap:8px; flex-wrap:wrap}
+
+  /* ---------- победа ---------- */
+  #winLayer{position:fixed; inset:0; background:rgba(15,8,25,.72); backdrop-filter:blur(4px);
+    display:flex; align-items:center; justify-content:center; z-index:50}
+  .winbox{background:linear-gradient(160deg,#3a2554,#241438); border:1px solid rgba(255,255,255,.18);
+    border-radius:26px; padding:38px 44px; text-align:center; max-width:90vw;
+    box-shadow:0 30px 80px rgba(0,0,0,.6); animation:winpop .5s cubic-bezier(.3,1.6,.5,1)}
+  @keyframes winpop{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+  .winbox h2{font-size:30px; margin-bottom:8px}
+  .winbox .scoreline{font-size:22px; margin:16px 0 4px; color:var(--rose)}
+  .winbox .meta{color:var(--muted); font-size:14px; margin-bottom:22px}
+  .heart{position:fixed; top:-40px; z-index:40; pointer-events:none; animation:fall linear forwards}
+  @keyframes fall{to{transform:translateY(110vh) rotate(360deg); opacity:.2}}
+  .floaty{position:absolute; pointer-events:none; animation:floatup 1.1s ease-out forwards; font-size:22px; z-index:30}
+  @keyframes floatup{from{opacity:1; transform:translateY(0) scale(1)}to{opacity:0; transform:translateY(-70px) scale(1.6)}}
+</style>
+</head>
+<body>
+
+<!-- ================= СТАРТ ================= -->
+<div id="startScreen">
+  <h1>Пятнашки на двоих 💘</h1>
+  <p class="sub">Игра на память за одним компьютером: переворачивайте по две карточки по очереди.
+     Совпали картинки — <b>+1 балл</b> и ходишь ещё раз. Не совпали — ход переходит к партнёру.</p>
+  <div class="panel">
+    <div class="rowlabel">Ваши имена</div>
+    <div class="names">
+      <input type="text" id="name1" placeholder="Игрок 1" maxlength="14" autocomplete="off">
+      <input type="text" id="name2" placeholder="Игрок 2" maxlength="14" autocomplete="off">
+    </div>
+    <div class="rowlabel">Размер поля</div>
+    <div class="choices" id="sizeChoices">
+      <div class="choice" data-cols="4" data-rows="3">4×3<br><small style="color:var(--muted)">6 пар</small></div>
+      <div class="choice sel" data-cols="4" data-rows="4">4×4<br><small style="color:var(--muted)">8 пар</small></div>
+      <div class="choice" data-cols="5" data-rows="4">5×4<br><small style="color:var(--muted)">10 пар</small></div>
+    </div>
+    <div class="rowlabel">Картинки</div>
+    <div class="choices" id="themeChoices">
+      <div class="choice sel" data-theme="love">💘 Романтика</div>
+      <div class="choice" data-theme="animals">🐱 Котики</div>
+      <div class="choice" data-theme="sweets">🍰 Сладости</div>
+    </div>
+    <button class="btn" id="startBtn">Начать игру ▶</button>
+  </div>
+</div>
+
+<!-- ================= ИГРА ================= -->
+<div id="gameScreen" class="hidden" style="width:100%; display:flex; flex-direction:column; align-items:center">
+  <div class="topline">
+    <div class="t">💘 Пятнашки</div>
+    <div>
+      <button class="iconbtn" id="muteBtn" title="Звук">🔊</button>
+      <button class="iconbtn" id="restartBtn" title="Новая игра">⟲</button>
+    </div>
+  </div>
+  <div class="scoreboard">
+    <div class="player" id="p1box"><span class="avatar">🙋🏻</span><span class="nm" id="p1name">Игрок 1</span><span class="sc" id="p1sc">0</span></div>
+    <div class="player" id="p2box"><span class="avatar">🙋🏼‍♀️</span><span class="nm" id="p2name">Игрок 2</span><span class="sc" id="p2sc">0</span></div>
+  </div>
+  <div class="turnmsg" id="turnMsg"></div>
+  <div class="board" id="board"></div>
+  <div class="gameline">
+    <span id="pairsInfo"></span>
+    <span id="movesInfo"></span>
+    <span id="seriesInfo"></span>
+  </div>
+</div>
+
+<!-- ================= ПОБЕДА ================= -->
+<div id="winLayer" class="hidden">
+  <div class="winbox">
+    <h2 id="winTitle"></h2>
+    <div class="scoreline" id="winScore"></div>
+    <div class="meta" id="winMeta"></div>
+    <button class="btn" id="againBtn">Ещё партия 🔁</button>
+    <button class="btn" id="menuBtn" style="background:rgba(255,255,255,.12); box-shadow:none; margin-top:12px">Изменить настройки ⚙</button>
+  </div>
+</div>
+
+<script>
+/* ============================== НАСТРОЙКИ ============================== */
+const THEMES = {
+  love:    ['💖','💘','💝','💕','🌹','🍫','💌','🧸','🌸','💋','🎁','💍'],
+  animals: ['🐱','🐶','🦊','🐼','🐰','🐨','🦁','🐯','🐷','🐸','🦉','🦄'],
+  sweets:  ['🍰','🧁','🍩','🍦','🍭','🍪','🍓','🍇','🥝','🍉','🍑','🍒']
+};
+const $ = id => document.getElementById(id);
+let cfg = { cols:4, rows:4, theme:'love' };
+let st;            // игровое состояние
+let soundOn = true;
+let audio = null;
+
+document.querySelectorAll('#sizeChoices .choice').forEach(el=>{
+  el.onclick = ()=>{ pick('#sizeChoices',el); cfg.cols=+el.dataset.cols; cfg.rows=+el.dataset.rows; };
+});
+document.querySelectorAll('#themeChoices .choice').forEach(el=>{
+  el.onclick = ()=>{ pick('#themeChoices',el); cfg.theme=el.dataset.theme; };
+});
+function pick(sel,el){ document.querySelectorAll(sel+' .choice').forEach(c=>c.classList.remove('sel')); el.classList.add('sel'); }
+
+/* ============================== ЗВУК ============================== */
+function ac(){ if(!audio) audio = new (window.AudioContext||window.webkitAudioContext)(); return audio; }
+function tone(f,t,dur,type='sine',vol=.12){
+  if(!soundOn) return;
+  try{
+    const a=ac(), o=a.createOscillator(), g=a.createGain();
+    o.type=type; o.frequency.value=f;
+    g.gain.setValueAtTime(vol,a.currentTime+t);
+    g.gain.exponentialRampToValueAtTime(.001,a.currentTime+t+dur);
+    o.connect(g); g.connect(a.destination);
+    o.start(a.currentTime+t); o.stop(a.currentTime+t+dur);
+  }catch(e){}
+}
+const sFlip  = ()=> tone(700,0,.07,'triangle',.06);
+const sMatch = ()=>{ tone(523,0,.12); tone(659,.09,.12); tone(784,.18,.2); };
+const sNope  = ()=> tone(220,0,.18,'sawtooth',.05);
+const sWin   = ()=>{ [523,659,784,1046,784,1046,1318].forEach((f,i)=>tone(f,i*.13,.2,'triangle',.12)); };
+
+/* ============================== ИГРА ============================== */
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+function newGame(keepWins){
+  const names=(st&&keepWins)?[st.names[0],st.names[1]]:[
+    $('name1').value.trim()||'Игрок 1',
+    $('name2').value.trim()||'Игрок 2'];
+  const wins=(st&&keepWins)?st.wins:[0,0];
+  st = { names, wins, scores:[0,0], cur:0, flipped:null, lock:false,
+         matchedPairs:0, pairs:cfg.cols*cfg.rows/2, moves:0 };
+
+  $('p1name').textContent=names[0]; $('p2name').textContent=names[1];
+  $('p1sc').textContent=0; $('p2sc').textContent=0;
+
+  const emo = THEMES[cfg.theme].slice(0, st.pairs);
+  const deck = shuffle([...emo, ...emo]);
+  const board = $('board');
+  board.style.gridTemplateColumns = `repeat(${cfg.cols}, 1fr)`;
+  board.innerHTML = '';
+  deck.forEach(e=>{
+    const c = document.createElement('div');
+    c.className='card'; c.dataset.e=e;
+    c.innerHTML = `<div class="card-inner">
+      <div class="face back">♥</div>
+      <div class="face front">${e}</div></div>`;
+    c.onclick = ()=> onCard(c);
+    board.appendChild(c);
+  });
+  updateHUD();
+  updateTurnMsg();
+}
+
+function onCard(c){
+  if(st.lock || c.classList.contains('flip')) return;
+  c.classList.add('flip'); sFlip();
+  if(!st.flipped){ st.flipped = c; return; }
+
+  st.moves++; st.lock = true;
+  const first = st.flipped; st.flipped = null;
+
+  if(first.dataset.e === c.dataset.e){
+    /* ---- совпадение ---- */
+    setTimeout(()=>{
+      first.classList.add('matched','done');
+      c.classList.add('matched','done');
+      st.scores[st.cur]++; st.matchedPairs++;
+      sMatch();
+      floatHeart(c);
+      st.lock=false;
+      updateHUD();
+      if(st.matchedPairs===st.pairs) endGame();
+      else { updateTurnMsg('Нашёл пару — ходи ещё раз! 🎯'); }
+    }, 380);
+  } else {
+    /* ---- промах ---- */
+    setTimeout(()=>{
+      first.classList.add('shake'); c.classList.add('shake'); sNope();
+    }, 500);
+    setTimeout(()=>{
+      first.classList.remove('flip','shake');
+      c.classList.remove('flip','shake');
+      st.cur = 1-st.cur; st.lock=false;
+      updateHUD(); updateTurnMsg();
+    }, 950);
+  }
+  updateHUD();
+}
+
+function updateHUD(){
+  $('p1sc').textContent = st.scores[0];
+  $('p2sc').textContent = st.scores[1];
+  $('p1box').classList.toggle('active', st.cur===0);
+  $('p2box').classList.toggle('active', st.cur===1);
+  $('pairsInfo').textContent = `Пар найдено: ${st.matchedPairs}/${st.pairs}`;
+  $('movesInfo').textContent = `Ходов: ${st.moves}`;
+  const [w1,w2]=st.wins;
+  $('seriesInfo').textContent = (w1||w2) ? `Серия побед: ${st.names[0]} ${w1} : ${w2} ${st.names[1]}` : '';
+}
+function updateTurnMsg(extra){
+  $('turnMsg').innerHTML = extra || `Сейчас ходит: <b>${st.names[st.cur]}</b> ${st.cur===0?'🌷':'🌸'}`;
+}
+
+/* маленькое сердечко, взлетающее с карточки */
+function floatHeart(card){
+  const r = card.getBoundingClientRect();
+  for(let i=0;i<3;i++){
+    const h = document.createElement('div');
+    h.className='floaty'; h.textContent='💗';
+    h.style.left=(r.left+r.width/2+(Math.random()*40-20))+'px';
+    h.style.top =(r.top +r.height/2)+'px';
+    h.style.animationDelay=(i*0.08)+'s';
+    document.body.appendChild(h);
+    setTimeout(()=>h.remove(),1300);
+  }
+}
+
+function heartsRain(){
+  const syms=['💗','💖','💘','💕','🌹','💜','🤍'];
+  for(let i=0;i<36;i++){
+    const h=document.createElement('div');
+    h.className='heart'; h.textContent=syms[Math.floor(Math.random()*syms.length)];
+    h.style.left=Math.random()*100+'vw';
+    h.style.fontSize=(18+Math.random()*26)+'px';
+    h.style.animationDuration=(2.4+Math.random()*2.4)+'s';
+    h.style.animationDelay=(Math.random()*2)+'s';
+    document.body.appendChild(h);
+    setTimeout(()=>h.remove(),6000);
+  }
+}
+
+function endGame(){
+  const [s1,s2]=st.scores;
+  let title;
+  if(s1===s2){ title='🤝 Ничья — вы идеальная пара!'; }
+  else{
+    const w = s1>s2?0:1;
+    st.wins[w]++;
+    title = `🏆 ${st.names[w]} побеждает!`;
+  }
+  updateHUD();
+  sWin(); heartsRain();
+  setTimeout(()=>{
+    $('winTitle').textContent = title;
+    $('winScore').textContent = `${st.names[0]} ${s1} : ${s2} ${st.names[1]}`;
+    $('winMeta').textContent = `Ходов: ${st.moves} • Поле ${cfg.cols}×${cfg.rows}`;
+    $('winLayer').classList.remove('hidden');
+  }, 900);
+}
+
+/* ============================== КНОПКИ ============================== */
+$('startBtn').onclick = ()=>{
+  $('startScreen').classList.add('hidden');
+  $('gameScreen').classList.remove('hidden');
+  ac();                    // разбудить звук на клике
+  newGame(false);
+};
+$('againBtn').onclick = ()=>{ $('winLayer').classList.add('hidden'); newGame(true); };
+$('menuBtn').onclick  = ()=>{
+  $('winLayer').classList.add('hidden');
+  $('gameScreen').classList.add('hidden');
+  $('startScreen').classList.remove('hidden');
+};
+$('restartBtn').onclick = ()=>{
+  if(confirm('Начать игру заново? Счёт партии обнулится.')) newGame(true);
+};
+$('muteBtn').onclick = ()=>{ soundOn=!soundOn; $('muteBtn').textContent = soundOn?'🔊':'🔇'; };
+</script>
+</body>
+</html>
